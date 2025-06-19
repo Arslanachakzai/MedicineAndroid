@@ -37,6 +37,7 @@ public class MainActivity extends AppCompatActivity {
         setContentView(R.layout.activity_main);
 
         db=new DatabaseHelper(this);
+        // test commit
 /*
 
         PeriodicWorkRequest request = new PeriodicWorkRequest.Builder(ReminderWorker.class,
