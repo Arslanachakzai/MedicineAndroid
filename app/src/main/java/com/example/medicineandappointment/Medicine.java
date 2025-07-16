@@ -15,6 +15,7 @@ public class Medicine {
         this.notes = notes;
     }
 
+
     // Getters
     public int getId() { return id; }
     public String getName() { return name; }

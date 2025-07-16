@@ -1,167 +1,118 @@
 package com.example.medicineandappointment;
 
-import androidx.appcompat.app.AppCompatActivity;
-import android.graphics.Color;
+import android.app.DatePickerDialog;
+import android.app.TimePickerDialog;
+import android.content.Intent;
 import android.os.Bundle;
 import android.view.View;
-import android.widget.ArrayAdapter;
-import android.widget.AutoCompleteTextView; // IMPORTANT: Changed from EditText
+import android.widget.Button;
+import android.widget.DatePicker;
 import android.widget.EditText;
-import android.widget.HorizontalScrollView;
-import android.widget.ImageButton;
-import android.widget.LinearLayout;
-import android.widget.TextView;
+import android.widget.TimePicker;
 import android.widget.Toast;
 
-import com.google.android.material.button.MaterialButton;
-import com.google.android.material.card.MaterialCardView;
-import com.google.android.material.chip.Chip;
-import com.google.android.material.chip.ChipGroup;
+import androidx.appcompat.app.AppCompatActivity;
+
+import java.text.SimpleDateFormat;
+import java.util.Calendar;
+import java.util.Locale;
 
 public class AddAppointmentActivity extends AppCompatActivity {
 
-    // --- MODIFIED: We now use AutoCompleteTextView for the doctor name ---
-    private AutoCompleteTextView actvDoctorName;
+    Calendar calendar;
+    EditText etPatientName, etDoctorName, etDateTime, etPurpose;
+    Button btnSaveAppointment;
+    long appointmentTimeMillis;
 
-    // --- UNCHANGED ---
-    private ImageButton backButton;
-    private EditText etFullName;
-    private HorizontalScrollView hsvDateSelector;
-    private ChipGroup chipGroupTime;
-    private MaterialButton btnBookAppointment;
-
-    private View selectedDateCard = null;
-    private String selectedDate = "";
-    private String selectedTime = "";
+    DatabaseHelper db;
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
-        setContentView(R.layout.activity_addappointment); // Make sure this matches your XML file name
+        setContentView(R.layout.activity_addappointment);
 
-        initializeViews();
-        setupDoctorDropdown(); // NEW: A method to set up the doctor list
-        setupClickListeners();
-    }
+        db = new DatabaseHelper(this);
 
-    private void initializeViews() {
-        backButton = findViewById(R.id.ibBack);
+        etPatientName = findViewById(R.id.etPatientName);
+        etDoctorName = findViewById(R.id.Doctoe_name); // Note: consider fixing typo in ID: "Doctoe_name" → "etDoctorName"
+        etDateTime = findViewById(R.id.etDateTime);
+        etPurpose = findViewById(R.id.etNotes);
+        btnSaveAppointment = findViewById(R.id.btnSaveAppointment);
 
-        // --- MODIFIED: Find the AutoCompleteTextView by its correct ID ---
-        actvDoctorName = findViewById(R.id.actvDoctorName);
+        calendar = Calendar.getInstance();
 
-        // --- UNCHANGED ---
-        etFullName = findViewById(R.id.etFullName);
-        hsvDateSelector = findViewById(R.id.hsvDateSelector);
-        chipGroupTime = findViewById(R.id.chipGroupTime);
-        btnBookAppointment = findViewById(R.id.btnBookAppointment);
-    }
-
-    /**
-     * NEW METHOD: Sets up the list of doctors for the dropdown menu.
-     */
-    private void setupDoctorDropdown() {
-        // 1. Create the list of doctor names you want to show
-        String[] doctors = new String[]{"Dr. Ali Raza", "Dr. Fatima Sheikh", "Dr. Usman Baig", "Dr. Ayesha Malik"};
-
-        // 2. Create an adapter that Android uses to show the list
-        ArrayAdapter<String> adapter = new ArrayAdapter<>(
-                this,
-                android.R.layout.simple_dropdown_item_1line,
-                doctors
-        );
-
-        // 3. Set the adapter on your AutoCompleteTextView
-        actvDoctorName.setAdapter(adapter);
-    }
-
-
-    private void setupClickListeners() {
-        backButton.setOnClickListener(v -> finish());
-        setupDateSelection();
-
-        chipGroupTime.setOnCheckedStateChangeListener((group, checkedIds) -> {
-            if (checkedIds.isEmpty()) {
-                selectedTime = "";
-            } else {
-                Chip selectedChip = findViewById(checkedIds.get(0));
-                selectedTime = selectedChip.getText().toString();
+        etDateTime.setOnClickListener(new View.OnClickListener() {
+            @Override
+            public void onClick(View v) {
+                showDatePicker();
             }
         });
 
-        btnBookAppointment.setOnClickListener(v -> performBooking());
-    }
+        btnSaveAppointment.setOnClickListener(new View.OnClickListener() {
+            @Override
+            public void onClick(View v) {
+                String patientName = etPatientName.getText().toString().trim();
+                String doctorName = etDoctorName.getText().toString().trim();
+                String purpose = etPurpose.getText().toString().trim();
 
-    private void performBooking() {
-        // --- MODIFIED: Get text from the AutoCompleteTextView ---
-        String doctorName = actvDoctorName.getText().toString().trim();
-        String patientName = etFullName.getText().toString().trim();
-
-        // The rest of the validation is the same
-        if (doctorName.isEmpty()) {
-            Toast.makeText(this, "Please select a doctor", Toast.LENGTH_SHORT).show();
-            return;
-        }
-        if (selectedDate.isEmpty()) {
-            Toast.makeText(this, "Please select a date", Toast.LENGTH_SHORT).show();
-            return;
-        }
-        if (selectedTime.isEmpty()) {
-            Toast.makeText(this, "Please select a time slot", Toast.LENGTH_SHORT).show();
-            return;
-        }
-        if (patientName.isEmpty()) {
-            Toast.makeText(this, "Please enter the patient's name", Toast.LENGTH_SHORT).show();
-            return;
-        }
-
-        String summary = "Appointment Booked!\n\n" +
-                "Doctor: " + doctorName + "\n" +
-                "Patient: " + patientName + "\n" +
-                "Date: " + selectedDate + "\n" +
-                "Time: " + selectedTime;
-
-        Toast.makeText(this, summary, Toast.LENGTH_LONG).show();
-    }
-
-
-    private void setupDateSelection() {
-        LinearLayout dateContainer = (LinearLayout) hsvDateSelector.getChildAt(0);
-        for (int i = 0; i < dateContainer.getChildCount(); i++) {
-            final View dateCard = dateContainer.getChildAt(i);
-            dateCard.setOnClickListener(view -> {
-                if (selectedDateCard != null) {
-                    resetDateCardStyle(selectedDateCard);
+                if (patientName.isEmpty() || doctorName.isEmpty() || appointmentTimeMillis == 0) {
+                    Toast.makeText(getApplicationContext(), "Please fill all required fields", Toast.LENGTH_SHORT).show();
+                    return;
                 }
-                selectDateCardStyle(view);
-                selectedDateCard = view;
-                extractDateFromCard(view);
-            });
-        }
+                boolean added = db.registerAppointment(patientName, doctorName, String.valueOf(appointmentTimeMillis), purpose);
+
+
+                if (added) {
+                    Intent intent = new Intent(AddAppointmentActivity.this, AppointmentList.class);
+                    intent.putExtra("PatientName", patientName);
+                    intent.putExtra("DoctorName", doctorName);
+                    intent.putExtra("Notes", purpose);
+                    intent.putExtra("ReminderTime", appointmentTimeMillis);
+                    startActivity(intent);
+                } else {
+                    Toast.makeText(getApplicationContext(), "Failed to save appointment", Toast.LENGTH_SHORT).show();
+                }
+            }
+        });
     }
 
+    void showDatePicker() {
+        int year = calendar.get(Calendar.YEAR);
+        int month = calendar.get(Calendar.MONTH);
+        int day = calendar.get(Calendar.DAY_OF_MONTH);
 
-    private void selectDateCardStyle(View card) {
-        MaterialCardView cardView = (MaterialCardView) card;
-        cardView.setCardBackgroundColor(Color.parseColor("#00796B"));
-        LinearLayout innerLayout = (LinearLayout) cardView.getChildAt(0);
-        ((TextView) innerLayout.getChildAt(0)).setTextColor(Color.WHITE);
-        ((TextView) innerLayout.getChildAt(1)).setTextColor(Color.WHITE);
+        DatePickerDialog datePickerDialog = new DatePickerDialog(this, new DatePickerDialog.OnDateSetListener() {
+            @Override
+            public void onDateSet(DatePicker view, int y, int m, int d) {
+                calendar.set(Calendar.YEAR, y);
+                calendar.set(Calendar.MONTH, m);
+                calendar.set(Calendar.DAY_OF_MONTH, d);
+                showTimePicker();
+            }
+        }, year, month, day);
+
+        datePickerDialog.getDatePicker().setMinDate(System.currentTimeMillis() - 1000);
+        datePickerDialog.show();
     }
 
-    private void resetDateCardStyle(View card) {
-        MaterialCardView cardView = (MaterialCardView) card;
-        cardView.setCardBackgroundColor(Color.WHITE);
-        LinearLayout innerLayout = (LinearLayout) cardView.getChildAt(0);
-        ((TextView) innerLayout.getChildAt(0)).setTextColor(Color.parseColor("#424242"));
-        ((TextView) innerLayout.getChildAt(1)).setTextColor(Color.parseColor("#424242"));
-    }
+    void showTimePicker() {
+        int hour = calendar.get(Calendar.HOUR_OF_DAY);
+        int minute = calendar.get(Calendar.MINUTE);
 
-    private void extractDateFromCard(View card) {
-        MaterialCardView cardView = (MaterialCardView) card;
-        LinearLayout innerLayout = (LinearLayout) cardView.getChildAt(0);
-        TextView tvDayOfWeek = (TextView) innerLayout.getChildAt(0);
-        TextView tvDayOfMonth = (TextView) innerLayout.getChildAt(1);
-        selectedDate = tvDayOfWeek.getText().toString() + ", " + tvDayOfMonth.getText().toString();
+        TimePickerDialog timePickerDialog = new TimePickerDialog(this, new TimePickerDialog.OnTimeSetListener() {
+            @Override
+            public void onTimeSet(TimePicker view, int h, int m) {
+                calendar.set(Calendar.HOUR_OF_DAY, h);
+                calendar.set(Calendar.MINUTE, m);
+                calendar.set(Calendar.SECOND, 0);
+                calendar.set(Calendar.MILLISECOND, 0);
+
+                SimpleDateFormat sdf = new SimpleDateFormat("dd MMM yyyy, hh:mm a", Locale.getDefault());
+                etDateTime.setText(sdf.format(calendar.getTime()));
+                appointmentTimeMillis = calendar.getTimeInMillis();
+            }
+        }, hour, minute, false);
+
+        timePickerDialog.show();
     }
 }

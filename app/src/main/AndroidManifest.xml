@@ -3,7 +3,7 @@
     xmlns:tools="http://schemas.android.com/tools">
 
     <uses-permission android:name="android.permission.POST_NOTIFICATIONS" />
-    <uses-permission android:name="android.permission.RECEIVE_BOOT_COMPLETED"/>
+    <uses-permission android:name="android.permission.RECEIVE_BOOT_COMPLETED" />
 
     <application
         android:allowBackup="true"
@@ -15,6 +15,9 @@
         android:supportsRtl="true"
         android:theme="@style/Theme.MedicineAndAppointment"
         tools:targetApi="31">
+        <activity
+            android:name=".AppointmentList"
+            android:exported="false" />
         <activity
             android:name=".MedicineListsActivity"
             android:exported="false" />
@@ -46,7 +49,6 @@
         <activity android:name=".BookDoctor" />
 
         <receiver android:name=".ReminderReceiver" />
-
     </application>
 
 </manifest>

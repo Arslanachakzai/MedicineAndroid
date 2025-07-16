@@ -7,17 +7,7 @@ import android.content.Intent;
 import android.os.Bundle;
 import android.widget.Button;
 
-import androidx.activity.EdgeToEdge;
 import androidx.appcompat.app.AppCompatActivity;
-import androidx.core.graphics.Insets;
-import androidx.core.view.ViewCompat;
-import androidx.core.view.WindowInsetsCompat;
-import androidx.work.ExistingPeriodicWorkPolicy;
-import androidx.work.OneTimeWorkRequest;
-import androidx.work.PeriodicWorkRequest;
-import androidx.work.WorkManager;
-
-import java.util.concurrent.TimeUnit;
 
 public class MainActivity extends AppCompatActivity {
 
@@ -27,41 +17,34 @@ public class MainActivity extends AppCompatActivity {
     Button FindDoctorButton;
     Button HealthTipsButton;
     Button medicineListBtn;
-
     Button SettingsButton;
+    Button AppointmentListBtn;
 
     DatabaseHelper db;
+
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
         setContentView(R.layout.activity_main);
 
-        db=new DatabaseHelper(this);
-        // test commit
-/*
+        db = new DatabaseHelper(this);
 
-        PeriodicWorkRequest request = new PeriodicWorkRequest.Builder(ReminderWorker.class,
-                1, TimeUnit.SECONDS)
-                .build();
-
-        WorkManager.getInstance(this).enqueueUniquePeriodicWork(
-                "medicine_reminder",
-                ExistingPeriodicWorkPolicy.KEEP,
-                request
-        );
-*/
-
+        // AlarmManager to trigger ReminderReceiver every 1 minute
         AlarmManager alarmManager = (AlarmManager) getSystemService(Context.ALARM_SERVICE);
-        Intent intent = new Intent(this, ReminderReceiver.class); // A BroadcastReceiver
-        PendingIntent pendingIntent = PendingIntent.getBroadcast(this, 0, intent, PendingIntent.FLAG_IMMUTABLE);
+        Intent intent = new Intent(this, ReminderReceiver.class);
+        PendingIntent pendingIntent = PendingIntent.getBroadcast(
+                this, 0, intent, PendingIntent.FLAG_UPDATE_CURRENT | PendingIntent.FLAG_IMMUTABLE);
 
-        alarmManager.setRepeating(
-                AlarmManager.RTC_WAKEUP,
-                System.currentTimeMillis(),
-                60 * 1000, // 1 minute
-                pendingIntent
-        );
+        if (alarmManager != null) {
+            alarmManager.setRepeating(
+                    AlarmManager.RTC_WAKEUP,
+                    System.currentTimeMillis(),
+                    60 * 1000,  // every minute
+                    pendingIntent
+            );
+        }
 
+        // Initialize buttons
         addMedicineButton = findViewById(R.id.AddMedicine);
         addAppointmentButton = findViewById(R.id.AddAppointment);
         ViewHIstoryButton = findViewById(R.id.view_history_button);
@@ -69,7 +52,10 @@ public class MainActivity extends AppCompatActivity {
         HealthTipsButton = findViewById(R.id.health_tips_button);
         SettingsButton = findViewById(R.id.settings_button);
         medicineListBtn = findViewById(R.id.medicine_list_btn);
+        AppointmentListBtn = findViewById(R.id.appointment_list_btn);
 
+
+        // Set click listeners
         SettingsButton.setOnClickListener(v -> SwitchToSettingsScreen());
         addMedicineButton.setOnClickListener(v -> SwitchToAddMedicineScreen());
         addAppointmentButton.setOnClickListener(v -> SwitchToAddAppointmentScreen());
@@ -77,46 +63,38 @@ public class MainActivity extends AppCompatActivity {
         FindDoctorButton.setOnClickListener(v -> SwitchToFindDoctorScreen());
         HealthTipsButton.setOnClickListener(v -> SwitchToHealthTipsScreen());
         medicineListBtn.setOnClickListener(v -> SwitchToMedicineListScreen());
-
+        AppointmentListBtn.setOnClickListener(v -> SwitchToAppointmentList());
     }
 
-
-    private void SwitchToSettingsScreen(){
-        Intent intent = new Intent(MainActivity.this, Settings.class);
-        startActivity(intent);
+    private void SwitchToSettingsScreen() {
+        startActivity(new Intent(MainActivity.this, Settings.class));
     }
+
     private void SwitchToHealthTipsScreen() {
-
-        Intent intent = new Intent(MainActivity.this, HealthTips.class);
-        startActivity(intent);
-
+        startActivity(new Intent(MainActivity.this, HealthTips.class));
     }
 
     private void SwitchToMedicineListScreen() {
-
-        Intent intent = new Intent(MainActivity.this, MedicineListsActivity.class);
-        startActivity(intent);
-
+        startActivity(new Intent(MainActivity.this, MedicineListsActivity.class));
     }
 
     private void SwitchToFindDoctorScreen() {
-        Intent intent = new Intent(MainActivity.this, FindDoctor.class);
-        startActivity(intent);
+        startActivity(new Intent(MainActivity.this, FindDoctor.class));
     }
 
     private void SwitchToViewHistoryScreen() {
-        Intent intent = new Intent(MainActivity.this, ViewHistory.class);
-        startActivity(intent);
+        startActivity(new Intent(MainActivity.this, ViewHistory.class));
     }
 
-    void SwitchToAddMedicineScreen(){
-        Intent intent = new Intent(MainActivity.this, AddMedicineActivity.class);
-        startActivity(intent);
+    private void SwitchToAddMedicineScreen() {
+        startActivity(new Intent(MainActivity.this, AddMedicineActivity.class));
     }
 
-    void SwitchToAddAppointmentScreen(){
-        Intent intent = new Intent(MainActivity.this, AddAppointmentActivity.class);
-        startActivity(intent);
+    private void SwitchToAddAppointmentScreen() {
+        startActivity(new Intent(MainActivity.this, AddAppointmentActivity.class));
     }
 
+    private void SwitchToAppointmentList() {
+        startActivity(new Intent(MainActivity.this, AppointmentList.class));
+    }
 }
